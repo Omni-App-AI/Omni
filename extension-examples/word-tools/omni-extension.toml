@@ -1,0 +1,125 @@
+[extension]
+id = "com.omni.examples.word-tools"
+name = "Word Tools"
+version = "1.0.0"
+author = "Omni Contributors"
+description = "Text analysis and manipulation tools — count words, analyze readability, transform case, summarize text, and more."
+license = "MIT"
+categories = ["utilities", "text-processing"]
+
+[runtime]
+type = "wasm"
+entrypoint = "omni_word_tools.wasm"
+max_memory_mb = 32
+max_cpu_ms_per_call = 3000
+max_concurrent_calls = 8
+
+# ---------- Configuration ----------
+
+[config.fields.default_language]
+type = "enum"
+label = "Default Language"
+help = "Language used for readability analysis when not specified in the request."
+options = ["english", "spanish", "french", "german"]
+default = "english"
+
+[config.fields.max_text_length]
+type = "string"
+label = "Max Text Length"
+help = "Maximum number of characters allowed per request (default: 100000)."
+default = "100000"
+
+# ---------- Permissions ----------
+
+[[permissions]]
+capability = "network.http"
+scope = { domains = ["api.dictionaryapi.dev"], methods = ["GET"] }
+reason = "Look up word definitions from the free Dictionary API."
+required = false
+
+# ---------- Tools ----------
+
+[[tools]]
+name = "word_count"
+description = "Count words, sentences, paragraphs, and characters in a text."
+[tools.parameters]
+type = "object"
+required = ["text"]
+[tools.parameters.properties.text]
+type = "string"
+description = "The text to analyze."
+
+[[tools]]
+name = "readability"
+description = "Compute readability metrics for a text: Flesch-Kincaid grade level, average sentence length, and average word length."
+[tools.parameters]
+type = "object"
+required = ["text"]
+[tools.parameters.properties.text]
+type = "string"
+description = "The text to analyze."
+
+[[tools]]
+name = "transform_case"
+description = "Transform the case of a text. Supported modes: uppercase, lowercase, title_case, sentence_case, snake_case, kebab_case, camel_case, pascal_case."
+[tools.parameters]
+type = "object"
+required = ["text", "mode"]
+[tools.parameters.properties.text]
+type = "string"
+description = "The text to transform."
+[tools.parameters.properties.mode]
+type = "string"
+enum = ["uppercase", "lowercase", "title_case", "sentence_case", "snake_case", "kebab_case", "camel_case", "pascal_case"]
+description = "The case transformation to apply."
+
+[[tools]]
+name = "find_replace"
+description = "Find and replace text occurrences. Supports plain text matching."
+[tools.parameters]
+type = "object"
+required = ["text", "find", "replace"]
+[tools.parameters.properties.text]
+type = "string"
+description = "The source text."
+[tools.parameters.properties.find]
+type = "string"
+description = "The substring to find."
+[tools.parameters.properties.replace]
+type = "string"
+description = "The replacement string."
+
+[[tools]]
+name = "extract_keywords"
+description = "Extract the most frequently occurring meaningful words from a text (filters out common stop words)."
+[tools.parameters]
+type = "object"
+required = ["text"]
+[tools.parameters.properties.text]
+type = "string"
+description = "The text to extract keywords from."
+[tools.parameters.properties.top_n]
+type = "integer"
+minimum = 1
+maximum = 50
+description = "Number of top keywords to return (default: 10)."
+
+[[tools]]
+name = "define_word"
+description = "Look up the definition of an English word using the free Dictionary API. Requires network permission."
+[tools.parameters]
+type = "object"
+required = ["word"]
+[tools.parameters.properties.word]
+type = "string"
+description = "The word to look up."
+
+[[tools]]
+name = "text_stats_history"
+description = "View or clear the history of text analyses performed in this session. Uses persistent storage to track usage."
+[tools.parameters]
+type = "object"
+[tools.parameters.properties.action]
+type = "string"
+enum = ["view", "clear"]
+description = "Action to perform: 'view' returns the history, 'clear' resets it (default: view)."

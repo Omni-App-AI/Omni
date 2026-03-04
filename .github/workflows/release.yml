@@ -1,0 +1,232 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+            target: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+            target: aarch64-apple-darwin
+          - platform: macos-latest
+            args: "--target x86_64-apple-darwin"
+            target: x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+            target: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+
+      - name: Install OpenSSL (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install openssl --no-progress -y
+          echo "OPENSSL_DIR=C:\Program Files\OpenSSL-Win64" >> $env:GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "ui/src-tauri -> target"
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: ui
+          tauriScript: npx tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: "Omni ${{ github.ref_name }}"
+          releaseBody: "See the release notes below for details."
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') || contains(github.ref_name, '-alpha') }}
+          args: ${{ matrix.args }}
+
+  register-release:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release info
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+          # Determine channel from tag
+          if [[ "$TAG" == *"-beta"* ]] || [[ "$TAG" == *"-alpha"* ]] || [[ "$TAG" == *"-rc"* ]]; then
+            echo "channel=beta" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-nightly"* ]]; then
+            echo "channel=nightly" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "channel=stable" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get release notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          NOTES=$(gh release view "$TAG" --json body -q '.body' 2>/dev/null || echo "No release notes")
+          # Write multiline output safely
+          echo "notes<<NOTES_EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "NOTES_EOF" >> $GITHUB_OUTPUT
+
+      - name: Collect platform artifacts
+        id: platforms
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          VERSION="${{ steps.release.outputs.version }}"
+
+          # Download all .sig files from the release
+          mkdir -p /tmp/sigs
+          gh release download "$TAG" --pattern '*.sig' --dir /tmp/sigs 2>/dev/null || true
+
+          # Helpers
+          read_sig() {
+            local file="/tmp/sigs/$1.sig"
+            if [ -f "$file" ]; then
+              cat "$file"
+            fi
+          }
+
+          get_size() {
+            gh release view "$TAG" --json assets -q ".assets[] | select(.name==\"$1\") | .size" 2>/dev/null || echo "0"
+          }
+
+          PLATFORMS="{}"
+
+          # Windows NSIS installer
+          WIN_EXE="Omni_${VERSION}_x64-setup.exe"
+          WIN_SIG=$(read_sig "$WIN_EXE")
+          WIN_SIZE=$(get_size "$WIN_EXE")
+          if [ -n "$WIN_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "https://github.com/OWNER/omni/releases/download/${TAG}/${WIN_EXE}" \
+              --arg sig "$WIN_SIG" --arg size "$WIN_SIZE" --arg name "$WIN_EXE" \
+              '. + {"windows-x86_64": {"url": $url, "signature": $sig, "size_bytes": ($size | tonumber), "asset_name": $name, "installer_type": "nsis"}}')
+          fi
+
+          # macOS ARM64 (Apple Silicon)
+          MAC_ARM="Omni_${VERSION}_aarch64.dmg"
+          MAC_ARM_SIG=$(read_sig "$MAC_ARM")
+          MAC_ARM_SIZE=$(get_size "$MAC_ARM")
+          if [ -n "$MAC_ARM_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "https://github.com/OWNER/omni/releases/download/${TAG}/${MAC_ARM}" \
+              --arg sig "$MAC_ARM_SIG" --arg size "$MAC_ARM_SIZE" --arg name "$MAC_ARM" \
+              '. + {"darwin-aarch64": {"url": $url, "signature": $sig, "size_bytes": ($size | tonumber), "asset_name": $name, "installer_type": "dmg"}}')
+          fi
+
+          # macOS x86_64 (Intel)
+          MAC_X64="Omni_${VERSION}_x64.dmg"
+          MAC_X64_SIG=$(read_sig "$MAC_X64")
+          MAC_X64_SIZE=$(get_size "$MAC_X64")
+          if [ -n "$MAC_X64_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "https://github.com/OWNER/omni/releases/download/${TAG}/${MAC_X64}" \
+              --arg sig "$MAC_X64_SIG" --arg size "$MAC_X64_SIZE" --arg name "$MAC_X64" \
+              '. + {"darwin-x86_64": {"url": $url, "signature": $sig, "size_bytes": ($size | tonumber), "asset_name": $name, "installer_type": "dmg"}}')
+          fi
+
+          # Linux AppImage
+          LINUX_AI="Omni_${VERSION}_amd64.AppImage"
+          LINUX_SIG=$(read_sig "$LINUX_AI")
+          LINUX_SIZE=$(get_size "$LINUX_AI")
+          if [ -n "$LINUX_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "https://github.com/OWNER/omni/releases/download/${TAG}/${LINUX_AI}" \
+              --arg sig "$LINUX_SIG" --arg size "$LINUX_SIZE" --arg name "$LINUX_AI" \
+              '. + {"linux-x86_64": {"url": $url, "signature": $sig, "size_bytes": ($size | tonumber), "asset_name": $name, "installer_type": "appimage"}}')
+          fi
+
+          echo "json<<PLATFORMS_EOF" >> $GITHUB_OUTPUT
+          echo "$PLATFORMS" >> $GITHUB_OUTPUT
+          echo "PLATFORMS_EOF" >> $GITHUB_OUTPUT
+
+      - name: Register release in Supabase
+        env:
+          RELEASE_PUBLISH_API_KEY: ${{ secrets.RELEASE_PUBLISH_API_KEY }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          NOTES=$(cat <<'NOTES_EOF'
+          ${{ steps.notes.outputs.notes }}
+          NOTES_EOF
+          )
+
+          BODY=$(jq -n \
+            --arg version "${{ steps.release.outputs.version }}" \
+            --arg channel "${{ steps.release.outputs.channel }}" \
+            --arg notes "$NOTES" \
+            --argjson is_prerelease "${{ steps.release.outputs.is_prerelease }}" \
+            --argjson platforms '${{ steps.platforms.outputs.json }}' \
+            '{
+              version: $version,
+              channel: $channel,
+              release_notes: $notes,
+              platforms: $platforms,
+              is_prerelease: $is_prerelease
+            }')
+
+          curl -sf -X POST "${APP_URL}/api/v1/releases/publish" \
+            -H "Authorization: Bearer ${RELEASE_PUBLISH_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY"

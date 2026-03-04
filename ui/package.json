@@ -1,0 +1,39 @@
+{
+  "name": "omni-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-shell": "^2",
+    "@tauri-apps/plugin-updater": "^2.10.0",
+    "@types/dompurify": "^3.0.5",
+    "@xyflow/react": "^12.10.1",
+    "diff2html": "^3.4.56",
+    "dompurify": "^3.3.1",
+    "lucide-react": "^0.460",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-markdown": "^9",
+    "react-syntax-highlighter": "^15",
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-syntax-highlighter": "^15",
+    "@vitejs/plugin-react": "^4",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^6"
+  }
+}

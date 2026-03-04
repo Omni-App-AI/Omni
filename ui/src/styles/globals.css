@@ -1,0 +1,321 @@
+@import "tailwindcss";
+@import "./themes/light.css";
+@import "./themes/dark.css";
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Dynamic appearance variables (overridden by JS via applyAppearance) */
+  --font-size: 14px;
+  --font-family: Inter, system-ui, sans-serif;
+  --line-height: 1.5;
+  --border-radius: 8px;
+  --density-padding: 1rem;
+  --density-gap: 0.75rem;
+  --sidebar-width: 250px;
+  --max-message-width: 75%;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Default to system theme */
+html:not([data-theme]) {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-sidebar: #f1f3f5;
+  --bg-hover: #e9ecef;
+  --bg-input: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --border: #e5e7eb;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --code-bg: #f3f4f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    --bg-primary: #0f0f23;
+    --bg-secondary: #1a1a2e;
+    --bg-sidebar: #16162a;
+    --bg-hover: #252540;
+    --bg-input: #1e1e36;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #60a5fa;
+    --accent-hover: #3b82f6;
+    --border: #2d2d44;
+    --danger: #f87171;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --code-bg: #1e293b;
+  }
+}
+
+/* ─── Reduce Animations ─────────────────────────────────────────── */
+
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* ─── High Contrast ─────────────────────────────────────────────── */
+
+.high-contrast {
+  --text-primary: #000000;
+  --text-secondary: #1a1a1a;
+  --text-muted: #4a4a4a;
+}
+
+[data-theme="dark"].high-contrast {
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #b0b0b0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .high-contrast:not([data-theme]) {
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #b0b0b0;
+  }
+}
+
+/* ─── React Flow Overrides ─────────────────────────────────────── */
+
+/* Suppress React Flow built-in node styles — all nodes use custom BaseNode rendering */
+.react-flow__node,
+.react-flow__node-default,
+.react-flow__node-input,
+.react-flow__node-output,
+.react-flow__node-group {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  width: auto !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  text-align: inherit !important;
+}
+
+.react-flow__node.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Make edges selectable with a wider hover/click target */
+.react-flow__edge {
+  cursor: pointer;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent) !important;
+  stroke-width: 3 !important;
+}
+
+.react-flow__edge-interaction {
+  stroke-width: 20 !important;
+}
+
+.react-flow__controls-button {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border) !important;
+  fill: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--bg-hover) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--text-primary) !important;
+}
+
+
+/* ─── Diff2Html Light Mode Overrides ───────────────────────────── */
+
+[data-theme="light"] .d2h-wrapper,
+[data-theme="light"] .d2h-file-wrapper {
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] .d2h-file-header {
+  background-color: var(--bg-secondary) !important;
+  border-bottom-color: var(--border) !important;
+}
+
+[data-theme="light"] .d2h-file-header .d2h-file-name {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .d2h-diff-table {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] .d2h-code-line,
+[data-theme="light"] .d2h-code-linenumber {
+  color: var(--text-secondary) !important;
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] .d2h-code-line-prefix {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .d2h-info {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  border-color: var(--border) !important;
+  color: var(--accent) !important;
+}
+
+/* ─── Diff2Html Dark Mode Overrides ────────────────────────────── */
+
+[data-theme="dark"] .d2h-wrapper,
+[data-theme="dark"] .d2h-file-wrapper {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .d2h-file-header {
+  background-color: var(--bg-secondary) !important;
+  border-bottom-color: var(--border) !important;
+}
+
+[data-theme="dark"] .d2h-file-header .d2h-file-name {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .d2h-diff-table {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .d2h-code-line,
+[data-theme="dark"] .d2h-code-linenumber {
+  color: var(--text-secondary) !important;
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .d2h-del {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+[data-theme="dark"] .d2h-del .d2h-code-line-ctn {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .d2h-ins {
+  background-color: rgba(34, 197, 94, 0.12) !important;
+}
+
+[data-theme="dark"] .d2h-ins .d2h-code-line-ctn {
+  background-color: rgba(34, 197, 94, 0.12) !important;
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .d2h-code-line-prefix {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .d2h-info {
+  background-color: rgba(96, 165, 250, 0.1) !important;
+  border-color: var(--border) !important;
+  color: var(--accent) !important;
+}
+
+[data-theme="dark"] .d2h-emptyplaceholder,
+[data-theme="dark"] .d2h-code-side-emptyplaceholder {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--border) !important;
+}
+
+/* Also apply for system dark theme when no data-theme is set */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .d2h-wrapper,
+  html:not([data-theme]) .d2h-file-wrapper {
+    border-color: var(--border) !important;
+  }
+
+  html:not([data-theme]) .d2h-file-header {
+    background-color: var(--bg-secondary) !important;
+    border-bottom-color: var(--border) !important;
+  }
+
+  html:not([data-theme]) .d2h-file-header .d2h-file-name {
+    color: var(--text-primary) !important;
+  }
+
+  html:not([data-theme]) .d2h-diff-table {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border) !important;
+  }
+
+  html:not([data-theme]) .d2h-code-line,
+  html:not([data-theme]) .d2h-code-linenumber {
+    color: var(--text-secondary) !important;
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border) !important;
+  }
+
+  html:not([data-theme]) .d2h-del {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+  }
+
+  html:not([data-theme]) .d2h-del .d2h-code-line-ctn {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #fca5a5 !important;
+  }
+
+  html:not([data-theme]) .d2h-ins {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+  }
+
+  html:not([data-theme]) .d2h-ins .d2h-code-line-ctn {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+    color: #86efac !important;
+  }
+
+  html:not([data-theme]) .d2h-code-line-prefix {
+    color: var(--text-muted) !important;
+  }
+
+  html:not([data-theme]) .d2h-info {
+    background-color: rgba(96, 165, 250, 0.1) !important;
+    border-color: var(--border) !important;
+    color: var(--accent) !important;
+  }
+
+  html:not([data-theme]) .d2h-emptyplaceholder,
+  html:not([data-theme]) .d2h-code-side-emptyplaceholder {
+    background-color: var(--bg-hover) !important;
+    border-color: var(--border) !important;
+  }
+}

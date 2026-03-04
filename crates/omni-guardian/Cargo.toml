@@ -1,0 +1,38 @@
+[package]
+name = "omni-guardian"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+ml-classifier = ["ort", "tokenizers", "ndarray"]
+
+[dependencies]
+omni-core = { path = "../omni-core" }
+
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+jsonschema = { workspace = true }
+regex = { workspace = true }
+uuid = { workspace = true }
+base64 = { workspace = true }
+unicode-normalization = { workspace = true }
+
+# ML dependencies (optional — compile with --features ml-classifier)
+ort = { version = "2.0.0-rc.11", optional = true }
+tokenizers = { version = "0.21", default-features = false, features = ["onig"], optional = true }
+ndarray = { version = "0.16", optional = true }
+
+[[bench]]
+name = "scan_benchmarks"
+harness = false
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["test-util", "macros"] }
+criterion = { version = "0.5", features = ["html_reports"] }

@@ -1,0 +1,32 @@
+[package]
+name = "omni-channels"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+omni-core = { path = "../omni-core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+reqwest = { workspace = true }
+serenity = { workspace = true }
+teloxide = { workspace = true }
+dirs = { workspace = true }
+futures = { workspace = true }
+tokio-tungstenite = { workspace = true }
+axum = { workspace = true }
+hmac = { workspace = true }
+sha1 = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+jsonwebtoken = { workspace = true }
+reqwest-eventsource = { workspace = true }
+k256 = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

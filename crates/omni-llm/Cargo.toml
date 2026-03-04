@@ -1,0 +1,40 @@
+[package]
+name = "omni-llm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+omni-core = { path = "../omni-core" }
+omni-extensions = { path = "../omni-extensions" }
+omni-permissions = { path = "../omni-permissions" }
+omni-guardian = { path = "../omni-guardian" }
+
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+keyring = { workspace = true }
+reqwest = { workspace = true }
+reqwest-eventsource = { workspace = true }
+tiktoken-rs = { workspace = true }
+pin-project-lite = { workspace = true }
+url = { workspace = true }
+tokio-tungstenite = { workspace = true }
+regex = { workspace = true }
+scraper = { workspace = true }
+arboard = "3"
+
+[target.'cfg(windows)'.dependencies]
+uiautomation = { workspace = true }
+image = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["test-util"] }
+wiremock = { workspace = true }

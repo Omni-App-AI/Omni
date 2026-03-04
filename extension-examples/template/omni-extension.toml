@@ -1,0 +1,48 @@
+# ─── Extension Manifest ───────────────────────────────────────
+# Docs: ../README.md | Full SDK ref: ../SDK-REFERENCE.md
+
+[extension]
+id = "com.example.my-extension"      # TODO: Use your reverse-domain ID
+name = "My Extension"                # TODO: Display name
+version = "0.1.0"
+author = "Your Name"                 # TODO: Your name
+description = "A short description"  # TODO: What does your extension do?
+
+[runtime]
+entrypoint = "omni_my_extension.wasm"  # Must match Cargo package name (hyphens → underscores)
+
+# ─── Tools ────────────────────────────────────────────────────
+# Define the tools your extension exposes to the AI agent.
+
+[[tools]]
+name = "hello"
+description = "Returns a greeting for the given name."
+[tools.parameters]
+type = "object"
+required = ["name"]
+[tools.parameters.properties.name]
+type = "string"
+description = "The name to greet."
+
+# ─── Permissions (uncomment what you need) ────────────────────
+#
+# [[permissions]]
+# capability = "network.http"
+# scope = { domains = ["api.example.com"], methods = ["GET"] }
+# reason = "Fetch data from Example API."
+#
+# [[permissions]]
+# capability = "filesystem.read"
+# reason = "Read configuration files."
+#
+# [[permissions]]
+# capability = "ai.inference"
+# reason = "Use LLM for text analysis."
+
+# ─── User Configuration (optional) ───────────────────────────
+#
+# [config.fields.api_key]
+# type = "string"
+# label = "API Key"
+# sensitive = true
+# required = true

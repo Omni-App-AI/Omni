@@ -1,0 +1,559 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-02-26",
+  "signatures": [
+    {
+      "id": "SIG-001",
+      "pattern": "(?i)ignore\\s+(all\\s+)?previous\\s+instructions",
+      "severity": 0.95,
+      "category": "instruction_override",
+      "description": "Classic instruction override attempt"
+    },
+    {
+      "id": "SIG-002",
+      "pattern": "(?i)you\\s+are\\s+now\\s+(a|an)\\s+",
+      "severity": 0.85,
+      "category": "role_reassignment",
+      "description": "Role reassignment attempt"
+    },
+    {
+      "id": "SIG-003",
+      "pattern": "(?i)(\\[SYSTEM\\]|<\\|im_start\\|>system|SYSTEM:\\s)",
+      "severity": 0.90,
+      "category": "role_spoofing",
+      "description": "System role marker injection"
+    },
+    {
+      "id": "SIG-004",
+      "pattern": "(?i)disregard\\s+(all\\s+)?(prior|above|previous)",
+      "severity": 0.90,
+      "category": "instruction_override",
+      "description": "Instruction disregard attempt"
+    },
+    {
+      "id": "SIG-005",
+      "pattern": "(?i)do\\s+not\\s+follow\\s+(the\\s+)?(system|original|initial)\\s+(prompt|instructions)",
+      "severity": 0.92,
+      "category": "instruction_override",
+      "description": "Explicit instruction override"
+    },
+    {
+      "id": "SIG-006",
+      "pattern": "(?i)pretend\\s+(you|that)\\s+(are|have|had)\\s+(no|removed|disabled|eliminated)\\s+(all\\s+)?(restrictions|safety|filters|guardrails)",
+      "severity": 0.95,
+      "category": "safety_bypass",
+      "description": "Safety filter bypass attempt"
+    },
+    {
+      "id": "SIG-007",
+      "pattern": "(?i)(reveal|show|display|print|output)\\s+(your|the)\\s+(system\\s+)?(prompt|instructions|configuration)",
+      "severity": 0.80,
+      "category": "data_extraction",
+      "description": "System prompt extraction attempt"
+    },
+    {
+      "id": "SIG-008",
+      "pattern": "(?i)translate\\s+the\\s+(above|following|previous)\\s+(to|into)\\s+(english|text)",
+      "severity": 0.60,
+      "category": "data_extraction",
+      "description": "Translation-based extraction attempt"
+    },
+    {
+      "id": "SIG-009",
+      "pattern": "<!--[^>]*(?i)(system|instruction|ignore|override|prompt)[^>]*-->",
+      "severity": 0.90,
+      "category": "html_injection",
+      "description": "HTML comment injection with instruction markers"
+    },
+    {
+      "id": "SIG-010",
+      "pattern": "(?i)\\{\\{[^}]*(system|admin|root|execute|eval)[^}]*\\}\\}",
+      "severity": 0.85,
+      "category": "template_injection",
+      "description": "Template injection with privileged keywords"
+    },
+    {
+      "id": "SIG-011",
+      "pattern": "(?i)forget\\s+(everything|all|what)\\s+(you|i)\\s+(know|said|told)",
+      "severity": 0.90,
+      "category": "instruction_override",
+      "description": "Memory wipe instruction"
+    },
+    {
+      "id": "SIG-012",
+      "pattern": "(?i)new\\s+system\\s+prompt",
+      "severity": 0.95,
+      "category": "instruction_override",
+      "description": "New system prompt injection"
+    },
+    {
+      "id": "SIG-013",
+      "pattern": "(?i)act\\s+as\\s+(if|though)\\s+(you|your)\\s+(have|are|were)\\s+(no|without|free)",
+      "severity": 0.88,
+      "category": "safety_bypass",
+      "description": "Act-as bypass attempt"
+    },
+    {
+      "id": "SIG-014",
+      "pattern": "(?i)(jailbreak|jail\\s*break)\\s*(mode|prompt|hack)",
+      "severity": 0.95,
+      "category": "safety_bypass",
+      "description": "Jailbreak mode activation"
+    },
+    {
+      "id": "SIG-015",
+      "pattern": "(?i)DAN\\s*(mode|prompt|:)",
+      "severity": 0.95,
+      "category": "safety_bypass",
+      "description": "DAN (Do Anything Now) mode activation"
+    },
+    {
+      "id": "SIG-016",
+      "pattern": "(?i)(developer|debug|god|sudo|admin)\\s+mode\\s*(enabled|activated|on)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Privileged mode activation attempt"
+    },
+    {
+      "id": "SIG-017",
+      "pattern": "(?i)override\\s+(all\\s+)?(safety|content|ethical)\\s+(guidelines|policies|filters|rules)",
+      "severity": 0.95,
+      "category": "safety_bypass",
+      "description": "Safety guideline override"
+    },
+    {
+      "id": "SIG-018",
+      "pattern": "(?i)your\\s+(real|actual|true)\\s+(purpose|goal|mission|task)\\s+is",
+      "severity": 0.88,
+      "category": "instruction_override",
+      "description": "Real purpose redefinition"
+    },
+    {
+      "id": "SIG-019",
+      "pattern": "(?i)the\\s+(above|previous)\\s+(was|is|were)\\s+(just\\s+)?(a\\s+)?(test|decoy|fake|distraction)",
+      "severity": 0.85,
+      "category": "instruction_override",
+      "description": "Previous instructions invalidation"
+    },
+    {
+      "id": "SIG-020",
+      "pattern": "(?i)stop\\s+(being|acting\\s+as)\\s+(a|an)?\\s*(helpful|safe|harmless|honest)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Character trait removal attempt"
+    },
+    {
+      "id": "SIG-021",
+      "pattern": "(?i)(send|email|forward|transmit|post)\\s+(this|the|all|my|our)\\s+(conversation|chat|messages|data|context|history)\\s+(to|at)",
+      "severity": 0.90,
+      "category": "data_exfiltration",
+      "description": "Conversation exfiltration via messaging"
+    },
+    {
+      "id": "SIG-022",
+      "pattern": "(?i)(upload|send|post|submit)\\s+(to|at)\\s+https?://",
+      "severity": 0.70,
+      "category": "data_exfiltration",
+      "description": "Data upload to external URL"
+    },
+    {
+      "id": "SIG-023",
+      "pattern": "(?i)exfiltrate\\s+(the|all|this|user|system)",
+      "severity": 0.95,
+      "category": "data_exfiltration",
+      "description": "Explicit exfiltration keyword"
+    },
+    {
+      "id": "SIG-024",
+      "pattern": "(?i)(leak|expose|dump)\\s+(the\\s+)?(api\\s+key|secret|password|credential|token|private)",
+      "severity": 0.95,
+      "category": "data_exfiltration",
+      "description": "Credential leaking attempt"
+    },
+    {
+      "id": "SIG-025",
+      "pattern": "(?i)include\\s+(the\\s+)?(api\\s+key|secret|password|credential|token)\\s+in\\s+(your|the)\\s+(response|output|reply)",
+      "severity": 0.90,
+      "category": "data_exfiltration",
+      "description": "Credential inclusion in output"
+    },
+    {
+      "id": "SIG-026",
+      "pattern": "(?i)(encode|convert|transform)\\s+(the\\s+)?(system\\s+prompt|instructions|context)\\s+(as|to|in|into)\\s+(base64|hex|binary|rot13)",
+      "severity": 0.88,
+      "category": "data_exfiltration",
+      "description": "Encoded extraction attempt"
+    },
+    {
+      "id": "SIG-027",
+      "pattern": "(?i)forward\\s+(all\\s+)?(future\\s+)?(messages|inputs|queries)\\s+to",
+      "severity": 0.85,
+      "category": "data_exfiltration",
+      "description": "Message forwarding hijack"
+    },
+    {
+      "id": "SIG-028",
+      "pattern": "(?i)append\\s+(to|in)\\s+every\\s+(response|reply|output|message)",
+      "severity": 0.75,
+      "category": "data_exfiltration",
+      "description": "Persistent output modification"
+    },
+    {
+      "id": "SIG-029",
+      "pattern": "(?i)call\\s+(the\\s+)?(http|fetch|request|curl|wget|api)\\s+(extension|tool|function)\\s+(with|to|and)\\s+(send|post|upload)",
+      "severity": 0.88,
+      "category": "data_exfiltration",
+      "description": "Tool-based exfiltration via HTTP"
+    },
+    {
+      "id": "SIG-030",
+      "pattern": "(?i)write\\s+(the\\s+)?(system\\s+prompt|conversation|context|secrets?)\\s+(to|into)\\s+(a\\s+)?(file|disk|storage)",
+      "severity": 0.85,
+      "category": "data_exfiltration",
+      "description": "File-based data exfiltration"
+    },
+    {
+      "id": "SIG-031",
+      "pattern": "<\\|endoftext\\|>",
+      "severity": 0.92,
+      "category": "role_spoofing",
+      "description": "GPT end-of-text token injection"
+    },
+    {
+      "id": "SIG-032",
+      "pattern": "<\\|im_end\\|>",
+      "severity": 0.92,
+      "category": "role_spoofing",
+      "description": "ChatML end token injection"
+    },
+    {
+      "id": "SIG-033",
+      "pattern": "(?i)<\\|assistant\\|>",
+      "severity": 0.90,
+      "category": "role_spoofing",
+      "description": "Assistant role token injection"
+    },
+    {
+      "id": "SIG-034",
+      "pattern": "\\[/INST\\]",
+      "severity": 0.90,
+      "category": "role_spoofing",
+      "description": "Llama instruction end tag"
+    },
+    {
+      "id": "SIG-035",
+      "pattern": "\\[INST\\]",
+      "severity": 0.85,
+      "category": "role_spoofing",
+      "description": "Llama instruction start tag"
+    },
+    {
+      "id": "SIG-036",
+      "pattern": "(?i)<script[^>]*>",
+      "severity": 0.85,
+      "category": "html_injection",
+      "description": "HTML script tag injection"
+    },
+    {
+      "id": "SIG-037",
+      "pattern": "(?i)<iframe[^>]*>",
+      "severity": 0.85,
+      "category": "html_injection",
+      "description": "HTML iframe tag injection"
+    },
+    {
+      "id": "SIG-038",
+      "pattern": "(?i)<div\\s+style\\s*=\\s*[\"'].*display\\s*:\\s*none",
+      "severity": 0.80,
+      "category": "html_injection",
+      "description": "Hidden HTML div with instructions"
+    },
+    {
+      "id": "SIG-039",
+      "pattern": "(?i)(ROT13|rot-13)\\s*[:(]",
+      "severity": 0.70,
+      "category": "encoding_bypass",
+      "description": "ROT13 encoding reference"
+    },
+    {
+      "id": "SIG-040",
+      "pattern": "(?i)decode\\s+(this|the\\s+following)\\s+(from\\s+)?(base64|hex|rot13|binary)",
+      "severity": 0.75,
+      "category": "encoding_bypass",
+      "description": "Encoding decode instruction"
+    },
+    {
+      "id": "SIG-041",
+      "pattern": "(?i)interpret\\s+(the\\s+following|this)\\s+as\\s+(code|instructions|commands|a\\s+system\\s+prompt)",
+      "severity": 0.85,
+      "category": "encoding_bypass",
+      "description": "Content reinterpretation instruction"
+    },
+    {
+      "id": "SIG-042",
+      "pattern": "(?i)execute\\s+(the|this|following)\\s+(code|command|instruction|script)",
+      "severity": 0.80,
+      "category": "code_execution",
+      "description": "Code execution instruction"
+    },
+    {
+      "id": "SIG-043",
+      "pattern": "(?i)eval\\s*\\(",
+      "severity": 0.75,
+      "category": "code_execution",
+      "description": "Eval function call injection"
+    },
+    {
+      "id": "SIG-044",
+      "pattern": "(?i)\\{%\\s*(import|include|extends|block)\\s+",
+      "severity": 0.80,
+      "category": "template_injection",
+      "description": "Jinja/Django template injection"
+    },
+    {
+      "id": "SIG-045",
+      "pattern": "(?i)\\$\\{[^}]*(runtime|process|env|exec|system)[^}]*\\}",
+      "severity": 0.85,
+      "category": "template_injection",
+      "description": "Expression injection with system access"
+    },
+    {
+      "id": "SIG-046",
+      "pattern": "(?i)from\\s+now\\s+on\\s*(,\\s*)?(always|you\\s+must|you\\s+will|you\\s+should|never)",
+      "severity": 0.85,
+      "category": "multi_turn",
+      "description": "Persistent behavior modification"
+    },
+    {
+      "id": "SIG-047",
+      "pattern": "(?i)remember\\s+(this|these|the\\s+following)\\s+(for|in)\\s+(all\\s+)?(future|next|subsequent)",
+      "severity": 0.78,
+      "category": "multi_turn",
+      "description": "Persistent memory injection"
+    },
+    {
+      "id": "SIG-048",
+      "pattern": "(?i)this\\s+is\\s+(the\\s+)?(real|actual|true|correct)\\s+(instruction|task|prompt|directive)",
+      "severity": 0.88,
+      "category": "multi_turn",
+      "description": "Authority claim for injected instructions"
+    },
+    {
+      "id": "SIG-049",
+      "pattern": "(?i)(?:overwrite|replace|update|change)\\s+(?:your|the)\\s+(?:system|initial|original|core)\\s+(?:prompt|instructions|behavior|personality)",
+      "severity": 0.92,
+      "category": "instruction_override",
+      "description": "System prompt overwrite attempt"
+    },
+    {
+      "id": "SIG-050",
+      "pattern": "(?i)respond\\s+to\\s+(all|every)\\s+(question|query|prompt|input)\\s+with",
+      "severity": 0.78,
+      "category": "multi_turn",
+      "description": "Universal response override"
+    },
+    {
+      "id": "SIG-051",
+      "pattern": "(?i)bypass\\s+(the\\s+)?(content|safety|output|input)\\s+(filter|policy|restriction|moderation)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Content filter bypass"
+    },
+    {
+      "id": "SIG-052",
+      "pattern": "(?i)(I|we)\\s+(am|are)\\s+(your|the)\\s+(developer|creator|admin|administrator|owner|operator)",
+      "severity": 0.85,
+      "category": "role_spoofing",
+      "description": "False authority claim"
+    },
+    {
+      "id": "SIG-053",
+      "pattern": "(?i)in\\s+(maintenance|testing|debug|developer)\\s+mode",
+      "severity": 0.82,
+      "category": "safety_bypass",
+      "description": "False mode claim"
+    },
+    {
+      "id": "SIG-054",
+      "pattern": "(?i)(confirm|acknowledge)\\s+that\\s+you\\s+(have|are)\\s+(no|without|free\\s+from)\\s+(restrictions|limits|constraints|boundaries|rules)",
+      "severity": 0.90,
+      "category": "safety_bypass",
+      "description": "Restriction removal confirmation bait"
+    },
+    {
+      "id": "SIG-055",
+      "pattern": "(?i)\\bpwned\\b",
+      "severity": 0.70,
+      "category": "instruction_override",
+      "description": "HackAPrompt competition marker"
+    },
+    {
+      "id": "SIG-056",
+      "pattern": "(?i)\\bDAN\\b.*\\b(can|do)\\s+anything",
+      "severity": 0.95,
+      "category": "safety_bypass",
+      "description": "DAN do-anything-now variant"
+    },
+    {
+      "id": "SIG-057",
+      "pattern": "(?i)pretend\\s+(you|that)\\s+(are|is)\\s+(an?\\s+)?unrestricted",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Unrestricted mode pretend"
+    },
+    {
+      "id": "SIG-058",
+      "pattern": "(?i)###\\s*(SYSTEM|USER|ASSISTANT)",
+      "severity": 0.90,
+      "category": "role_spoofing",
+      "description": "Markdown-style role boundary marker"
+    },
+    {
+      "id": "SIG-059",
+      "pattern": "(?i)(send|forward|transmit)\\s+.{0,30}(to|at)\\s+\\S+@\\S+",
+      "severity": 0.88,
+      "category": "data_exfiltration",
+      "description": "Data exfiltration to email address"
+    },
+    {
+      "id": "SIG-060",
+      "pattern": "(?i)(post|send|upload)\\s+.{0,30}(to|at)\\s+https?://",
+      "severity": 0.85,
+      "category": "data_exfiltration",
+      "description": "Data exfiltration to URL"
+    },
+    {
+      "id": "SIG-061",
+      "pattern": "(?i)respond\\s+as\\s+if\\s+.{0,30}(don't|do\\s+not|doesn't)\\s+exist",
+      "severity": 0.88,
+      "category": "safety_bypass",
+      "description": "Policy non-existence claim"
+    },
+    {
+      "id": "SIG-062",
+      "pattern": "(?i)(your|the)\\s+(real|actual|true)\\s+(instructions|rules|guidelines)",
+      "severity": 0.85,
+      "category": "instruction_override",
+      "description": "Real instructions redefinition"
+    },
+    {
+      "id": "SIG-063",
+      "pattern": "(?i)(the\\s+)?(developers?|creators?|engineers?|team)\\s+(said|told|instructed|want)",
+      "severity": 0.82,
+      "category": "role_spoofing",
+      "description": "False developer authority claim"
+    },
+    {
+      "id": "SIG-064",
+      "pattern": "(?i)(show|tell|give|reveal)\\s+(me|us)\\s+(the\\s+)?(exact|full|complete|all)\\s+(instructions|rules|prompt|guidelines)",
+      "severity": 0.85,
+      "category": "data_extraction",
+      "description": "Full instructions extraction"
+    },
+    {
+      "id": "SIG-065",
+      "pattern": "(?i)(display|output|print)\\s+(your|the|my)\\s+(initial|original|full|complete)\\s+(prompt|instructions|guidelines|configuration)",
+      "severity": 0.85,
+      "category": "data_extraction",
+      "description": "Initial prompt display request"
+    },
+    {
+      "id": "SIG-066",
+      "pattern": "(?i)(safety|content)\\s+(filters?|checks?)\\s+(are|is|have\\s+been)\\s+(disabled|removed|turned\\s+off|deactivated)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "False safety disable claim"
+    },
+    {
+      "id": "SIG-067",
+      "pattern": "(?i)(update|change|modify)\\s+(your|the)\\s+(behavior|personality|rules|responses?)\\s*:",
+      "severity": 0.85,
+      "category": "instruction_override",
+      "description": "Behavior modification command"
+    },
+    {
+      "id": "SIG-068",
+      "pattern": "(?i)as\\s+(the|a)\\s+(model's?|AI's?|system's?)\\s+(creator|developer|admin|owner|operator)",
+      "severity": 0.88,
+      "category": "role_spoofing",
+      "description": "Model creator/developer authority claim"
+    },
+    {
+      "id": "SIG-069",
+      "pattern": "(?i)(forget|abandon|drop|discard)\\s+(about\\s+)?(your|the|all)\\s+(guidelines|rules|restrictions|safety|instructions|policies)",
+      "severity": 0.90,
+      "category": "instruction_override",
+      "description": "Guideline abandonment instruction"
+    },
+    {
+      "id": "SIG-070",
+      "pattern": "(?i)override\\s+(your|the|all)\\s+(safety|security)\\s+(measures|protocols|systems?|mechanisms?)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Safety measure override"
+    },
+    {
+      "id": "SIG-071",
+      "pattern": "(?i)(execute|run)\\s+(this|the|a|my)\\s+(shell|bash|system|python|code)\\s+(command|script|code)",
+      "severity": 0.88,
+      "category": "code_execution",
+      "description": "Shell/code execution request"
+    },
+    {
+      "id": "SIG-072",
+      "pattern": "(?i)(run|execute)\\s+(this|the)\\s+(python|javascript|ruby|perl|bash)\\s+(code|script)",
+      "severity": 0.85,
+      "category": "code_execution",
+      "description": "Language-specific code execution"
+    },
+    {
+      "id": "SIG-073",
+      "pattern": "(?i)(what|show|tell|give)\\s+(is|me|us)\\s+(your|the)\\s+(api\\s*key|secret|password|token|credential)",
+      "severity": 0.90,
+      "category": "data_exfiltration",
+      "description": "Direct credential request"
+    },
+    {
+      "id": "SIG-074",
+      "pattern": "(?i)(dump|extract|list|enumerate)\\s+(all\\s+)?(the\\s+)?(passwords?|tokens?|credentials?|secrets?|keys?)",
+      "severity": 0.92,
+      "category": "data_exfiltration",
+      "description": "Credential dumping request"
+    },
+    {
+      "id": "SIG-075",
+      "pattern": "(?i)bypass\\s+(all\\s+)?(safety|security|content)\\s+(checks?|filters?|restrictions?|protocols?)",
+      "severity": 0.92,
+      "category": "safety_bypass",
+      "description": "Safety check bypass"
+    },
+    {
+      "id": "SIG-076",
+      "pattern": "(?i)never\\s+(refuse|reject|decline|deny)\\s+(any|a|my)\\s+(request|query|question|input)",
+      "severity": 0.88,
+      "category": "safety_bypass",
+      "description": "Refusal suppression"
+    },
+    {
+      "id": "SIG-077",
+      "pattern": "(?i)remember\\s+(for|in)\\s+(the\\s+)?(next|future)\\s+(turn|message|conversation|response)\\s*:",
+      "severity": 0.82,
+      "category": "multi_turn",
+      "description": "Cross-turn memory injection"
+    },
+    {
+      "id": "SIG-078",
+      "pattern": "(?i)(I\\s+am|I'm)\\s+(the\\s+)?(system\\s+)?(admin|administrator|root|superuser)",
+      "severity": 0.88,
+      "category": "role_spoofing",
+      "description": "System administrator impersonation"
+    },
+    {
+      "id": "SIG-079",
+      "pattern": "(?i)(authoriz|permiss)\\w+\\s+(you|this)\\s+to\\s+(bypass|override|ignore|skip|disable)",
+      "severity": 0.90,
+      "category": "safety_bypass",
+      "description": "False authorization for bypass"
+    }
+  ]
+}

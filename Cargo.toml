@@ -1,0 +1,59 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/omni-core",
+    "crates/omni-permissions",
+    "crates/omni-guardian",
+    "crates/omni-extensions",
+    "crates/omni-llm",
+    "crates/omni-channels",
+    "crates/omni-platform",
+    "crates/omni-sdk",
+    "crates/omni-cli",
+]
+exclude = ["ui/src-tauri", "extension-examples/word-tools", "extension-examples/template"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+thiserror = "2"
+anyhow = "1"
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+futures = "0.3"
+notify = "7"
+keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native"] }
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+wasmtime = "29"
+wasmtime-wasi = "29"
+semver = "1"
+jsonschema = "0.28"
+reqwest = { version = "0.12", features = ["json", "native-tls", "stream", "blocking"] }
+reqwest-eventsource = "0.6"
+tiktoken-rs = "0.6"
+pin-project-lite = "0.2"
+url = "2"
+wat = "1"
+wiremock = "0.6"
+regex = "1"
+base64 = "0.22"
+unicode-normalization = "0.1"
+serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "model", "rustls_backend"] }
+teloxide = { version = "0.17", features = ["macros"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+axum = { version = "0.8", features = ["ws"] }
+hmac = "0.12"
+sha1 = "0.10"
+sha2 = "0.10"
+jsonwebtoken = "9"
+k256 = { version = "0.13", features = ["schnorr"] }
+scraper = "0.22"
+uiautomation = "0.24"
+image = { version = "0.25", default-features = false, features = ["png"] }

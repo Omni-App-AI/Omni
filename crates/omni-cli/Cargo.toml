@@ -1,0 +1,22 @@
+[package]
+name = "omni-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "omni"
+path = "src/main.rs"
+
+[dependencies]
+omni-core = { path = "../omni-core" }
+omni-guardian = { path = "../omni-guardian" }
+omni-llm = { path = "../omni-llm" }
+omni-extensions = { path = "../omni-extensions" }
+omni-permissions = { path = "../omni-permissions" }
+clap = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+futures = { workspace = true }

@@ -1,0 +1,21 @@
+[package]
+name = "omni-word-tools"
+version = "1.0.0"
+edition = "2021"
+description = "An example Omni extension that provides text analysis and manipulation tools"
+authors = ["Omni Contributors"]
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+omni-sdk = { path = "../../crates/omni-sdk" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"     # Optimize for binary size (important for WASM)
+lto = true          # Link-time optimization
+strip = true        # Strip debug symbols
+codegen-units = 1   # Better optimization at the cost of compile time

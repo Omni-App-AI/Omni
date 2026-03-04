@@ -1,0 +1,17 @@
+[extension]
+id = "com.omni.test-hello"
+name = "Test Hello"
+version = "0.1.0"
+description = "A minimal test extension for integration testing"
+author = "Omni"
+
+[runtime]
+entrypoint = "hello.wasm"
+
+[[tools]]
+name = "hello"
+description = "Returns a hello greeting"
+
+[tools.parameters]
+type = "object"
+properties = {}
