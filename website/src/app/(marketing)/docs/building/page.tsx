@@ -100,7 +100,7 @@ export default function BuildingFromSourcePage() {
               </div>
               <div className="p-5 code-block text-muted-foreground space-y-1">
                 <p><span className="text-foreground/40">#</span> Clone the repository</p>
-                <p>git clone https://github.com/omniai/omni.git</p>
+                <p>git clone https://github.com/Omni-App-AI/Omni.git</p>
                 <p>cd omni</p>
                 <p className="text-muted-foreground/60">&nbsp;</p>
                 <p><span className="text-foreground/40">#</span> Build all crates in release mode</p>

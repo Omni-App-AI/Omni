@@ -20,7 +20,7 @@ const socialLinks = [
     ),
   },
   {
-    href: "https://github.com/omni-platform",
+    href: "https://github.com/Omni-App-AI/Omni",
     label: "GitHub",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
@@ -62,7 +62,7 @@ const footerLinks = {
     { href: "/dashboard", label: "Dashboard" },
   ],
   Community: [
-    { href: "https://github.com/omni-platform", label: "GitHub" },
+    { href: "https://github.com/Omni-App-AI/Omni", label: "GitHub" },
     { href: "https://discord.gg/AW4bZrP553", label: "Discord" },
     { href: "/community", label: "Forum" },
     { href: "/blog", label: "Blog" },

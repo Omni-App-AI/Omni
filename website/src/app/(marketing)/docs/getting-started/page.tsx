@@ -76,15 +76,15 @@ export default function GettingStartedPage() {
               </div>
               <div className="p-5 code-block text-muted-foreground space-y-1">
                 <p><span className="text-foreground/40">#</span> macOS (Apple Silicon)</p>
-                <p>curl -L https://github.com/omni-platform/omni/releases/latest/download/omni-macos-arm64.dmg -o omni.dmg</p>
+                <p>curl -L https://github.com/Omni-App-AI/Omni/releases/latest/download/omni-macos-arm64.dmg -o omni.dmg</p>
                 <p className="text-muted-foreground/60">&nbsp;</p>
                 <p><span className="text-foreground/40">#</span> macOS (Intel)</p>
-                <p>curl -L https://github.com/omni-platform/omni/releases/latest/download/omni-macos-x64.dmg -o omni.dmg</p>
+                <p>curl -L https://github.com/Omni-App-AI/Omni/releases/latest/download/omni-macos-x64.dmg -o omni.dmg</p>
                 <p className="text-muted-foreground/60">&nbsp;</p>
                 <p><span className="text-foreground/40">#</span> Windows — download the .msi installer from the releases page</p>
                 <p className="text-muted-foreground/60">&nbsp;</p>
                 <p><span className="text-foreground/40">#</span> Linux (Debian/Ubuntu)</p>
-                <p>curl -L https://github.com/omni-platform/omni/releases/latest/download/omni-linux-x64.deb -o omni.deb</p>
+                <p>curl -L https://github.com/Omni-App-AI/Omni/releases/latest/download/omni-linux-x64.deb -o omni.deb</p>
                 <p>sudo dpkg -i omni.deb</p>
               </div>
             </div>

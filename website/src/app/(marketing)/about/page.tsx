@@ -223,7 +223,7 @@ export default function AboutPage() {
               contribution.
             </p>
             <div className="mt-8 flex items-center gap-3">
-              <Link href="https://github.com/omni-platform" target="_blank" rel="noopener noreferrer">
+              <Link href="https://github.com/Omni-App-AI/Omni" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">
                   View on GitHub
                   <ArrowRight className="h-3.5 w-3.5" />

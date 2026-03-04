@@ -188,7 +188,7 @@ export default async function DownloadPage() {
                 notified when the first release is available.
               </p>
               <Link
-                href="https://github.com/OWNER/omni"
+                href="https://github.com/Omni-App-AI/Omni"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -236,7 +236,7 @@ export default async function DownloadPage() {
                 assets.
               </p>
               <Link
-                href="https://github.com/OWNER/omni/releases"
+                href="https://github.com/Omni-App-AI/Omni/releases"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline"
