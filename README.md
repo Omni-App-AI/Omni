@@ -1,6 +1,6 @@
 # Omni
 
-Created by **Colin Vaughn** | Licensed under **MIT**
+Created by **Colin Vaughn** | Licensed under **GPL**
 
 Omni is an open, extensible AI agent that lives on your desktop - designed as a security-focused competitor to OpenClaw. It connects to the LLM providers you already use, talks to people on your behalf across 25+ messaging platforms, and runs sandboxed WASM extensions that give it new skills without trusting arbitrary native code.
 
