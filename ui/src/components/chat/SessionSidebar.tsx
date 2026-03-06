@@ -16,6 +16,16 @@ export function SessionSidebar() {
     }
   };
 
+  const getTitle = (session: typeof sessions[number]): string => {
+    if (session.metadata) {
+      try {
+        const meta = JSON.parse(session.metadata);
+        if (meta.title) return meta.title;
+      } catch { /* ignore */ }
+    }
+    return "New Chat";
+  };
+
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-secondary)]">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
@@ -39,9 +49,7 @@ export function SessionSidebar() {
 
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
-          const truncatedId = session.id.length > 12
-            ? `${session.id.slice(0, 8)}...`
-            : session.id;
+          const title = getTitle(session);
 
           return (
             <button
@@ -52,11 +60,11 @@ export function SessionSidebar() {
                   ? "bg-[var(--accent)]/10 text-[var(--accent)] border-r-2 border-[var(--accent)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
               }`}
-              title={session.id}
+              title={title}
             >
-              <MessageSquare size={14} className="shrink-0" />
+              <MessageSquare size={14} className="shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="truncate font-mono text-xs">{truncatedId}</p>
+                <p className="truncate text-xs leading-snug">{title}</p>
                 <p className="text-[10px] text-[var(--text-muted)]">
                   {formatDate(session.updated_at)}
                 </p>

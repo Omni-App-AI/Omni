@@ -114,14 +114,23 @@ pub async fn send_message(
     let msg = message.clone();
     tokio::task::spawn_blocking(move || {
         let db = db.lock().unwrap();
+        // Check if this is the first message — if so, set a title from it
+        let msg_count = db.count_messages_for_session(&sid).unwrap_or(0);
         db.insert_message(&omni_core::database::NewMessage {
-            session_id: sid,
+            session_id: sid.clone(),
             role: "user".to_string(),
-            content: msg,
+            content: msg.clone(),
             tool_call_id: None,
             tool_calls: None,
             token_count: None,
-        })
+        })?;
+        if msg_count == 0 {
+            let title: String = msg.chars().take(80).collect();
+            let title = title.trim().to_string();
+            let metadata = serde_json::json!({ "title": title }).to_string();
+            let _ = db.update_session_metadata(&sid, &metadata);
+        }
+        Ok::<String, anyhow::Error>(sid)
     })
     .await
     .map_err(|e| e.to_string())?

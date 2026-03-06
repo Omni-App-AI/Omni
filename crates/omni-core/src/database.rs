@@ -321,6 +321,23 @@ impl Database {
         Ok(sessions)
     }
 
+    pub fn update_session_metadata(&self, id: &str, metadata: &str) -> Result<()> {
+        self.conn.execute(
+            "UPDATE sessions SET metadata = ?1, updated_at = datetime('now') WHERE id = ?2",
+            params![metadata, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn count_messages_for_session(&self, session_id: &str) -> Result<i64> {
+        let count: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM messages WHERE session_id = ?1",
+            params![session_id],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
     // --- Messages ---
 
     pub fn insert_message(&self, msg: &NewMessage) -> Result<String> {

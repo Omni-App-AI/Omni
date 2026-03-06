@@ -49,8 +49,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   send: async (content: string) => {
-    const { activeSessionId } = get();
+    const { activeSessionId, messages } = get();
     if (!activeSessionId) return;
+
+    const isFirstMessage = messages.length === 0;
 
     // Add user message locally
     const userMsg: MessageDto = { role: "user", content, tool_calls: null };
@@ -61,6 +63,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
 
     await sendMessage(activeSessionId, content);
+
+    // Reload sessions so the title updates in the sidebar
+    if (isFirstMessage) {
+      await get().loadSessions();
+    }
   },
 
   appendChunk: (chunk: string) => {

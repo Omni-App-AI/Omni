@@ -28,6 +28,7 @@ export function ChatPanel() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const streamBuffer = useChatStore((s) => s.streamBuffer);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
+  const sessions = useChatStore((s) => s.sessions);
   const loadSessions = useChatStore((s) => s.loadSessions);
   const send = useChatStore((s) => s.send);
   const appendChunk = useChatStore((s) => s.appendChunk);
@@ -93,9 +94,18 @@ export function ChatPanel() {
           >
             {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
           </button>
-          <h2 className="text-sm font-medium text-[var(--text-primary)]">
+          <h2 className="text-sm font-medium text-[var(--text-primary)] truncate">
             {activeSessionId
-              ? `Session ${activeSessionId.slice(0, 8)}...`
+              ? (() => {
+                  const s = sessions.find((s) => s.id === activeSessionId);
+                  if (s?.metadata) {
+                    try {
+                      const meta = JSON.parse(s.metadata);
+                      if (meta.title) return meta.title;
+                    } catch { /* ignore */ }
+                  }
+                  return "New Chat";
+                })()
               : "Select or start a session"}
           </h2>
           {isStreaming && (
