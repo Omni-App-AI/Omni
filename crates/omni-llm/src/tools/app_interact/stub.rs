@@ -51,15 +51,15 @@ impl UiAutomationBackend for StubBackend {
         Self::unsupported()
     }
 
-    fn click_element(&self, _element_ref: &str) -> Result<()> {
+    fn click_element(&self, _element_ref: &str, _retry_count: u32, _retry_delay_ms: u64) -> Result<()> {
         Self::unsupported()
     }
 
-    fn type_text(&self, _element_ref: &str, _text: &str) -> Result<()> {
+    fn type_text(&self, _element_ref: &str, _text: &str, _retry_count: u32, _retry_delay_ms: u64) -> Result<()> {
         Self::unsupported()
     }
 
-    fn read_text(&self, _element_ref: &str) -> Result<String> {
+    fn read_text(&self, _element_ref: &str, _retry_count: u32, _retry_delay_ms: u64) -> Result<String> {
         Self::unsupported()
     }
 
@@ -113,6 +113,31 @@ impl UiAutomationBackend for StubBackend {
     }
 
     fn focus_window(&self, _window_title: Option<&str>, _process_name: Option<&str>) -> Result<()> {
+        Self::unsupported()
+    }
+
+    fn element_info(&self, _element_ref: &str) -> Result<FoundElement> {
+        Self::unsupported()
+    }
+
+    fn wait_for_element(
+        &self,
+        _window_title: Option<&str>,
+        _process_name: Option<&str>,
+        _element_name: Option<&str>,
+        _element_type: Option<&str>,
+        _automation_id: Option<&str>,
+        _timeout_ms: u64,
+        _poll_interval_ms: u64,
+    ) -> Result<FoundElement> {
+        Self::unsupported()
+    }
+
+    fn get_window_title_by_hwnd(&self, _hwnd: isize, _delay_ms: u64) -> Result<String> {
+        Self::unsupported()
+    }
+
+    fn screenshot_window_by_hwnd(&self, _hwnd: isize) -> Result<ScreenshotResult> {
         Self::unsupported()
     }
 }

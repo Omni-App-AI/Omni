@@ -101,6 +101,26 @@ pub struct ManagedProcess {
     pub launched_at: std::time::Instant,
 }
 
+/// Parsed element reference — decoded from the element_ref string.
+/// Used internally by the Windows backend for 3-tier element lookup.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ParsedElementRef {
+    /// UIA RuntimeId (unique per session, most stable identifier).
+    pub runtime_id: Vec<i32>,
+    /// Native window handle (stable across title changes).
+    pub hwnd: isize,
+    /// Element name (display text).
+    pub name: String,
+    /// Control type string (e.g., "Button", "Edit").
+    pub ctrl_type: String,
+    /// Automation ID (developer-assigned, most reliable for Electron apps).
+    pub automation_id: String,
+    /// Index among matching siblings.
+    pub index: u32,
+    /// Legacy window title hash for backward compat with old format.
+    pub win_hash: String,
+}
+
 /// Screenshot capture result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenshotResult {

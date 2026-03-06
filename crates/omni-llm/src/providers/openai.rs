@@ -109,7 +109,7 @@ impl OpenAIProvider {
         });
 
         if let Some(max_tokens) = request.max_tokens {
-            body["max_tokens"] = serde_json::json!(max_tokens);
+            body["max_completion_tokens"] = serde_json::json!(max_tokens);
         }
         if let Some(temp) = request.temperature {
             body["temperature"] = serde_json::json!(temp);
@@ -497,7 +497,7 @@ mod tests {
         let body = provider.build_api_body(&request);
         assert_eq!(body["model"], "gpt-4.1");
         assert_eq!(body["stream"], true);
-        assert_eq!(body["max_tokens"], 1000);
+        assert_eq!(body["max_completion_tokens"], 1000);
         assert!((body["temperature"].as_f64().unwrap() - 0.7).abs() < 0.01);
         assert!(body["tools"].is_array());
         assert_eq!(body["tools"].as_array().unwrap().len(), 1);
@@ -520,7 +520,7 @@ mod tests {
 
         let body = provider.build_api_body(&request);
         assert_eq!(body["model"], "gpt-4.1");
-        assert!(body.get("max_tokens").is_none());
+        assert!(body.get("max_completion_tokens").is_none());
         assert!(body.get("temperature").is_none());
         assert!(body.get("tools").is_none());
     }

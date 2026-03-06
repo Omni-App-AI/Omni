@@ -55,5 +55,5 @@ sha2 = "0.10"
 jsonwebtoken = "9"
 k256 = { version = "0.13", features = ["schnorr"] }
 scraper = "0.22"
-uiautomation = "0.24"
+uiautomation = { version = "0.24", features = ["input", "control", "process", "event"] }
 image = { version = "0.25", default-features = false, features = ["png"] }

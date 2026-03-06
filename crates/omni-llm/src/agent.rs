@@ -15,7 +15,25 @@ use crate::hooks::{HookContext, HookPoint, HookRegistry, HookResult, ToolCallInf
 use crate::mcp::McpManager;
 use crate::system_prompt::SystemPromptBuilder;
 use crate::tools::NativeToolRegistry;
-use crate::types::{AgentResult, ChatChunk, ChatMessage, ImageContent, ToolCall, ToolSchema};
+use crate::types::{AgentResult, ChatChunk, ChatMessage, ChatRole, ImageContent, ToolCall, ToolSchema};
+
+/// Maximum number of tokens to spend on message history (approximate).
+/// Keeps the sliding window from growing unbounded.
+const MAX_HISTORY_TOKENS: usize = 32_000;
+
+/// Maximum length (in chars) for a single tool result before truncation.
+const MAX_TOOL_RESULT_CHARS: usize = 8_000;
+
+/// Core tools that are always included in every request.
+/// These are cheap (small schemas) and universally useful.
+const CORE_TOOLS: &[&str] = &[
+    "read_file",
+    "write_file",
+    "edit_file",
+    "exec",
+    "list_files",
+    "grep_search",
+];
 
 /// Handler for delegated tool actions (send_message, list_channels, etc.).
 ///
@@ -195,6 +213,170 @@ impl AgentLoop {
         self.run_with_trust(messages, user_message, max_iterations, None).await
     }
 
+    /// Select relevant tools for the current turn.
+    ///
+    /// Instead of sending ALL 29+ tool schemas on every LLM call (~25K tokens),
+    /// this filters to: core tools + tools already used in conversation + tools
+    /// that match the current context. Extensions, MCP, and flowchart tools are
+    /// always included since they're user-installed and expected.
+    fn select_relevant_tools(
+        all_tools: &[ToolSchema],
+        messages: &[ChatMessage],
+    ) -> Vec<ToolSchema> {
+        // Collect names of tools already used in the conversation
+        let mut used_tools: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for msg in messages {
+            if let Some(ref tcs) = msg.tool_calls {
+                for tc in tcs {
+                    used_tools.insert(tc.name.clone());
+                }
+            }
+        }
+
+        let mut selected: Vec<ToolSchema> = Vec::new();
+        let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        for tool in all_tools {
+            let dominated_name = tool.name.as_str();
+            let include =
+                // Always include core tools
+                CORE_TOOLS.contains(&dominated_name) ||
+                // Always include tools already used in this conversation
+                used_tools.contains(&tool.name) ||
+                // Always include extension/MCP/flowchart tools (user-installed, expected)
+                tool.name.contains('.') ||
+                tool.name.starts_with("mcp_") ||
+                // Include app_interact (needed for desktop automation tasks)
+                dominated_name == "app_interact" ||
+                // Include web tools (commonly needed)
+                dominated_name == "web_search" ||
+                dominated_name == "web_fetch" ||
+                // Include send_message and list_channels (communication)
+                dominated_name == "send_message" ||
+                dominated_name == "list_channels" ||
+                // Include git (version control)
+                dominated_name == "git" ||
+                // Include test_runner
+                dominated_name == "test_runner";
+
+            if include && seen.insert(tool.name.clone()) {
+                selected.push(tool.clone());
+            }
+        }
+
+        // If we filtered out less than 20% of tools, just send them all —
+        // the overhead of filtering isn't worth it.
+        if selected.len() * 5 >= all_tools.len() * 4 {
+            return all_tools.to_vec();
+        }
+
+        selected
+    }
+
+    /// Truncate message history to fit within a token budget.
+    ///
+    /// Strategy:
+    /// 1. Always keep the system message (index 0) and the last user message.
+    /// 2. Always keep tool_call + tool_result pairs that are in the most recent
+    ///    agent loop iteration (needed for correct API calls).
+    /// 3. For older messages, keep only the most recent ones that fit the budget.
+    /// 4. Truncate individual tool results that exceed MAX_TOOL_RESULT_CHARS.
+    fn truncate_history(messages: &mut Vec<ChatMessage>) {
+        // First pass: truncate oversized tool results
+        for msg in messages.iter_mut() {
+            if msg.role == ChatRole::Tool && msg.content.len() > MAX_TOOL_RESULT_CHARS {
+                let truncated = &msg.content[..MAX_TOOL_RESULT_CHARS];
+                // Find last complete line or JSON boundary
+                let cut_at = truncated.rfind('\n')
+                    .or_else(|| truncated.rfind('}'))
+                    .or_else(|| truncated.rfind(','))
+                    .unwrap_or(MAX_TOOL_RESULT_CHARS);
+                msg.content = format!(
+                    "{}...\n[truncated: {} chars total, showing first {}]",
+                    &msg.content[..cut_at],
+                    msg.content.len(),
+                    cut_at
+                );
+            }
+        }
+
+        // Estimate tokens (rough: 1 token ≈ 4 chars for English text)
+        let estimate_tokens = |msgs: &[ChatMessage]| -> usize {
+            msgs.iter().map(|m| {
+                let base = m.content.len() / 4 + 4; // +4 per-message overhead
+                let tc_tokens = m.tool_calls.as_ref().map_or(0, |tcs| {
+                    tcs.iter().map(|tc| tc.arguments.len() / 4 + 10).sum()
+                });
+                base + tc_tokens
+            }).sum()
+        };
+
+        let total_estimate = estimate_tokens(messages);
+        if total_estimate <= MAX_HISTORY_TOKENS {
+            return; // Fits within budget, no truncation needed
+        }
+
+        // Need to drop older messages. Strategy:
+        // - Keep system message (first message if role == System)
+        // - Keep the last N messages (most recent context)
+        // - Drop middle messages from oldest first
+        let has_system = messages.first().map_or(false, |m| m.role == ChatRole::System);
+        let protected_start = if has_system { 1 } else { 0 };
+
+        // Find how many messages from the end we can keep within budget
+        // Start from the end and walk backward
+        let system_tokens = if has_system {
+            messages[0].content.len() / 4 + 4
+        } else {
+            0
+        };
+
+        let mut budget_remaining = MAX_HISTORY_TOKENS.saturating_sub(system_tokens);
+        let mut keep_from = messages.len();
+
+        for i in (protected_start..messages.len()).rev() {
+            let msg_tokens = messages[i].content.len() / 4 + 4
+                + messages[i].tool_calls.as_ref().map_or(0, |tcs| {
+                    tcs.iter().map(|tc| tc.arguments.len() / 4 + 10).sum()
+                });
+            if msg_tokens > budget_remaining {
+                break;
+            }
+            budget_remaining -= msg_tokens;
+            keep_from = i;
+        }
+
+        // Don't drop anything if keep_from is already at the start
+        if keep_from <= protected_start {
+            return;
+        }
+
+        // Build the truncated message list
+        let dropped_count = keep_from - protected_start;
+        if dropped_count == 0 {
+            return;
+        }
+
+        let mut new_messages = Vec::new();
+        if has_system {
+            new_messages.push(messages[0].clone());
+        }
+        // Insert a summary marker so the LLM knows history was truncated
+        new_messages.push(ChatMessage::system(
+            &format!("[{} older messages truncated to save context space]", dropped_count),
+        ));
+        new_messages.extend_from_slice(&messages[keep_from..]);
+
+        let remaining = new_messages.len();
+        *messages = new_messages;
+
+        tracing::info!(
+            dropped = dropped_count,
+            remaining = remaining,
+            "Truncated message history to fit token budget"
+        );
+    }
+
     /// Run the agent loop with an explicit trust-level threshold modifier.
     pub async fn run_with_trust(
         &self,
@@ -291,10 +473,10 @@ impl AgentLoop {
         };
 
         // Native tools first, then MCP, then flowcharts, then WASM extensions
-        let mut tool_schemas = native_schemas;
-        tool_schemas.extend(mcp_schemas);
-        tool_schemas.extend(flowchart_schemas);
-        tool_schemas.extend(extension_schemas);
+        let mut all_tool_schemas = native_schemas;
+        all_tool_schemas.extend(mcp_schemas);
+        all_tool_schemas.extend(flowchart_schemas);
+        all_tool_schemas.extend(extension_schemas);
 
         // ── Inject system prompt on first turn ──────────────────────────
         // If a system prompt builder is configured and there's no system
@@ -305,10 +487,15 @@ impl AgentLoop {
                 .iter()
                 .any(|m| m.role == crate::types::ChatRole::System);
             if !has_system_msg {
-                let system_prompt = builder.build(&tool_schemas);
+                let system_prompt = builder.build(&all_tool_schemas);
                 messages.insert(0, ChatMessage::system(&system_prompt));
             }
         }
+
+        // ── Filter tool schemas to reduce per-request token overhead ────
+        // Instead of sending all 29+ tool schemas (~25K tokens) on every
+        // call, select only relevant ones based on context.
+        let tool_schemas = Self::select_relevant_tools(&all_tool_schemas, messages);
 
         let mut iteration = 0;
         let final_text;
@@ -358,6 +545,10 @@ impl AgentLoop {
                     }
                 }
             }
+
+            // ── Truncate history to stay within token budget ────────────
+            // Prevents unbounded growth of the message list across iterations.
+            Self::truncate_history(messages);
 
             // 3. Call the LLM with streaming
             let mut stream = self

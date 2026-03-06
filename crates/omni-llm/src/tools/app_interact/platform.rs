@@ -39,13 +39,16 @@ pub trait UiAutomationBackend: Send + Sync {
     ) -> Result<Vec<FoundElement>>;
 
     /// Click an element via its semantic interaction pattern (InvokePattern, not coordinates).
-    fn click_element(&self, element_ref: &str) -> Result<()>;
+    /// `retry_count` and `retry_delay_ms` control wait_for_ready behavior (defaults: 3 / 300).
+    fn click_element(&self, element_ref: &str, retry_count: u32, retry_delay_ms: u64) -> Result<()>;
 
     /// Type text into an element. Returns error if the element is a password field.
-    fn type_text(&self, element_ref: &str, text: &str) -> Result<()>;
+    /// `retry_count` and `retry_delay_ms` control wait_for_ready behavior (defaults: 3 / 300).
+    fn type_text(&self, element_ref: &str, text: &str, retry_count: u32, retry_delay_ms: u64) -> Result<()>;
 
     /// Read text from an element. Returns error if the element is a password field.
-    fn read_text(&self, element_ref: &str) -> Result<String>;
+    /// `retry_count` and `retry_delay_ms` control wait_for_ready behavior (defaults: 3 / 300).
+    fn read_text(&self, element_ref: &str, retry_count: u32, retry_delay_ms: u64) -> Result<String>;
 
     /// Get the UI element tree of a window, with depth limit and sensitive field redaction.
     /// When `compact` is true, element_ref strings are omitted to reduce output size for LLMs.
@@ -92,4 +95,28 @@ pub trait UiAutomationBackend: Send + Sync {
 
     /// Bring a window to the foreground and restore if minimized.
     fn focus_window(&self, window_title: Option<&str>, process_name: Option<&str>) -> Result<()>;
+
+    /// Get information about a found element by its reference (for validation/retry).
+    fn element_info(&self, element_ref: &str) -> Result<FoundElement>;
+
+    /// Wait for an element to appear with configurable poll interval.
+    fn wait_for_element(
+        &self,
+        window_title: Option<&str>,
+        process_name: Option<&str>,
+        element_name: Option<&str>,
+        element_type: Option<&str>,
+        automation_id: Option<&str>,
+        timeout_ms: u64,
+        poll_interval_ms: u64,
+    ) -> Result<FoundElement>;
+
+    /// Get the current title of the window that owns the given HWND.
+    /// Used after state-changing actions to detect navigation (title changes).
+    /// Waits `delay_ms` before checking to allow the title to update.
+    fn get_window_title_by_hwnd(&self, hwnd: isize, delay_ms: u64) -> Result<String>;
+
+    /// Capture a screenshot of the window identified by HWND.
+    /// Used for automatic post-navigation screenshots where the title may have changed.
+    fn screenshot_window_by_hwnd(&self, hwnd: isize) -> Result<ScreenshotResult>;
 }

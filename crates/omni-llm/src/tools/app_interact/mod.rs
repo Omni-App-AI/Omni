@@ -109,6 +109,63 @@ impl AppInteractTool {
         }
     }
 
+    /// Extract the HWND value from an element_ref string.
+    /// Format: `rid:...|hwnd:12345|name:...|type:...|aid:...|idx:...`
+    /// Returns 0 if not found or invalid.
+    fn extract_hwnd_from_element_ref(element_ref: &str) -> isize {
+        for part in element_ref.split('|') {
+            if let Some(val) = part.strip_prefix("hwnd:") {
+                return val.parse().unwrap_or(0);
+            }
+        }
+        0
+    }
+
+    /// After a state-changing action that may trigger navigation, wait briefly
+    /// then capture the current window title and a screenshot.
+    /// Returns the enriched JSON response, or the original response if enrichment fails.
+    async fn enrich_with_post_navigation_feedback(
+        &self,
+        base_response: serde_json::Value,
+        hwnd: isize,
+    ) -> serde_json::Value {
+        let backend = self.backend.clone();
+
+        let enrichment = tokio::task::spawn_blocking(move || -> Option<(String, types::ScreenshotResult)> {
+            // Wait 1500ms for the page to load and the title to update
+            let title = backend.get_window_title_by_hwnd(hwnd, 1500).ok()?;
+            let screenshot = backend.screenshot_window_by_hwnd(hwnd).ok()?;
+            Some((title, screenshot))
+        })
+        .await
+        .ok()
+        .flatten();
+
+        match enrichment {
+            Some((title, screenshot)) => {
+                let mut response = base_response;
+                if let Some(obj) = response.as_object_mut() {
+                    obj.insert(
+                        "current_window_title".to_string(),
+                        serde_json::Value::String(title),
+                    );
+                    obj.insert(
+                        "_image_data".to_string(),
+                        serde_json::json!([{
+                            "mime_type": screenshot.mime_type,
+                            "data": screenshot.image_base64,
+                        }]),
+                    );
+                }
+                response
+            }
+            None => {
+                eprintln!("[app_interact] post-navigation enrichment failed, returning base response");
+                base_response
+            }
+        }
+    }
+
     /// Check element_ref for sensitive element names. Used by click, type_text, read_text.
     fn check_sensitive_element_ref(&self, element_ref: &str, action_verb: &str) -> Result<()> {
         for part in element_ref.split('|') {
@@ -288,6 +345,8 @@ impl AppInteractTool {
             .as_str()
             .ok_or_else(|| LlmError::ToolCall("'element_ref' is required for click".to_string()))?
             .to_string();
+        let retry_count = params["retry_count"].as_u64().unwrap_or(3).min(10) as u32;
+        let retry_delay_ms = params["retry_delay_ms"].as_u64().unwrap_or(300).min(2000);
         let app_key = Self::app_key(&params);
 
         // Check sensitive element name before clicking
@@ -295,7 +354,7 @@ impl AppInteractTool {
 
         let backend = self.backend.clone();
         let ref_clone = element_ref.clone();
-        let result = tokio::task::spawn_blocking(move || backend.click_element(&ref_clone))
+        let result = tokio::task::spawn_blocking(move || backend.click_element(&ref_clone, retry_count, retry_delay_ms))
             .await
             .map_err(|e| LlmError::ToolCall(format!("Task join error: {e}")))?;
 
@@ -311,7 +370,16 @@ impl AppInteractTool {
         }
 
         result?;
-        Ok(serde_json::json!({ "status": "clicked" }))
+        let base = serde_json::json!({ "status": "clicked" });
+
+        // Auto-enrich with screenshot if clicking a hyperlink (may trigger navigation)
+        if element_ref.contains("type:Hyperlink") {
+            let hwnd = Self::extract_hwnd_from_element_ref(&element_ref);
+            if hwnd != 0 {
+                return Ok(self.enrich_with_post_navigation_feedback(base, hwnd).await);
+            }
+        }
+        Ok(base)
     }
 
     async fn handle_type_text(&self, params: serde_json::Value) -> Result<serde_json::Value> {
@@ -325,13 +393,18 @@ impl AppInteractTool {
             .as_str()
             .ok_or_else(|| LlmError::ToolCall("'text' is required for type_text".to_string()))?
             .to_string();
+        let retry_count = params["retry_count"].as_u64().unwrap_or(3).min(10) as u32;
+        let retry_delay_ms = params["retry_delay_ms"].as_u64().unwrap_or(300).min(2000);
         let app_key = Self::app_key(&params);
 
         self.check_sensitive_element_ref(&element_ref, "type into")?;
 
+        // Check navigation trigger before text is moved into the closure
+        let may_navigate = text.contains('\n');
+
         let backend = self.backend.clone();
         let ref_clone = element_ref.clone();
-        let result = tokio::task::spawn_blocking(move || backend.type_text(&ref_clone, &text))
+        let result = tokio::task::spawn_blocking(move || backend.type_text(&ref_clone, &text, retry_count, retry_delay_ms))
             .await
             .map_err(|e| LlmError::ToolCall(format!("Task join error: {e}")))?;
 
@@ -347,7 +420,16 @@ impl AppInteractTool {
         }
 
         result?;
-        Ok(serde_json::json!({ "status": "typed" }))
+        let base = serde_json::json!({ "status": "typed" });
+
+        // Auto-enrich with screenshot if text contained \n (Enter = navigation/submit)
+        if may_navigate {
+            let hwnd = Self::extract_hwnd_from_element_ref(&element_ref);
+            if hwnd != 0 {
+                return Ok(self.enrich_with_post_navigation_feedback(base, hwnd).await);
+            }
+        }
+        Ok(base)
     }
 
     async fn handle_read_text(&self, params: serde_json::Value) -> Result<serde_json::Value> {
@@ -357,13 +439,15 @@ impl AppInteractTool {
                 LlmError::ToolCall("'element_ref' is required for read_text".to_string())
             })?
             .to_string();
+        let retry_count = params["retry_count"].as_u64().unwrap_or(3).min(10) as u32;
+        let retry_delay_ms = params["retry_delay_ms"].as_u64().unwrap_or(300).min(2000);
         let app_key = Self::app_key(&params);
 
         self.check_sensitive_element_ref(&element_ref, "read")?;
 
         let backend = self.backend.clone();
         let ref_clone = element_ref.clone();
-        let result = tokio::task::spawn_blocking(move || backend.read_text(&ref_clone))
+        let result = tokio::task::spawn_blocking(move || backend.read_text(&ref_clone, retry_count, retry_delay_ms))
             .await
             .map_err(|e| LlmError::ToolCall(format!("Task join error: {e}")))?;
 
@@ -557,9 +641,15 @@ impl AppInteractTool {
         let process_name = params["process_name"].as_str().map(String::from);
         let app_key = Self::app_key(&params);
 
+        // Check navigation trigger before keys/window_title/process_name are moved into closure
+        let may_navigate = keys.to_lowercase().contains("enter");
+
         let backend = self.backend.clone();
+        let keys_clone = keys.clone();
+        let wt_clone = window_title.clone();
+        let pn_clone = process_name.clone();
         let result = tokio::task::spawn_blocking(move || {
-            backend.press_keys(window_title.as_deref(), process_name.as_deref(), &keys)
+            backend.press_keys(wt_clone.as_deref(), pn_clone.as_deref(), &keys_clone)
         })
         .await
         .map_err(|e| LlmError::ToolCall(format!("Task join error: {e}")))?;
@@ -568,7 +658,7 @@ impl AppInteractTool {
             Ok(()) => self.emit_audit(
                 "press_keys",
                 &app_key,
-                Some(&params["keys"].as_str().unwrap_or("")),
+                Some(&keys),
                 true,
                 None,
             ),
@@ -576,7 +666,43 @@ impl AppInteractTool {
         }
 
         result?;
-        Ok(serde_json::json!({ "status": "keys_sent" }))
+        let base = serde_json::json!({ "status": "keys_sent" });
+
+        // Auto-enrich with screenshot if pressing Enter (may trigger navigation)
+        if may_navigate {
+            let backend = self.backend.clone();
+            let post_wt = window_title;
+            let post_pn = process_name;
+
+            let enrichment = tokio::task::spawn_blocking(move || -> Option<types::ScreenshotResult> {
+                std::thread::sleep(std::time::Duration::from_millis(1500));
+                backend
+                    .screenshot_window(post_wt.as_deref(), post_pn.as_deref())
+                    .ok()
+            })
+            .await
+            .ok()
+            .flatten();
+
+            if let Some(screenshot) = enrichment {
+                let mut response = base;
+                if let Some(obj) = response.as_object_mut() {
+                    obj.insert(
+                        "current_window_title".to_string(),
+                        serde_json::Value::String(screenshot.window_title.clone()),
+                    );
+                    obj.insert(
+                        "_image_data".to_string(),
+                        serde_json::json!([{
+                            "mime_type": screenshot.mime_type,
+                            "data": screenshot.image_base64,
+                        }]),
+                    );
+                }
+                return Ok(response);
+            }
+        }
+        Ok(base)
     }
 
     async fn handle_scroll(&self, params: serde_json::Value) -> Result<serde_json::Value> {
@@ -717,6 +843,14 @@ impl NativeTool for AppInteractTool {
                 "timeout_ms": {
                     "type": "integer",
                     "description": "Timeout in milliseconds for element search (default: 5000, max: 30000)"
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "description": "Number of retries for click/type_text/read_text when element is not ready (default: 3, max: 10)"
+                },
+                "retry_delay_ms": {
+                    "type": "integer",
+                    "description": "Delay between retries in milliseconds for click/type_text/read_text (default: 300, max: 2000)"
                 }
             },
             "required": ["action"]
@@ -730,7 +864,10 @@ impl NativeTool for AppInteractTool {
     async fn execute(&self, params: serde_json::Value) -> Result<serde_json::Value> {
         let action = params["action"]
             .as_str()
-            .ok_or_else(|| LlmError::ToolCall("'action' parameter is required".to_string()))?;
+            .ok_or_else(|| LlmError::ToolCall("'action' parameter is required".to_string()))?
+            .to_string();
+
+        eprintln!("[app_interact] execute: action='{}' params={}", action, serde_json::to_string(&params).unwrap_or_default());
 
         // Check if platform is supported
         if !self.backend.is_supported() {
@@ -740,14 +877,14 @@ impl NativeTool for AppInteractTool {
         }
 
         // Validate action against the configured scope
-        SecurityGuard::validate_action(action, &self.scope)?;
+        SecurityGuard::validate_action(&action, &self.scope)?;
 
         // Rate limit check using scope
         let app_key = Self::app_key(&params);
         self.check_rate_limit(&app_key)?;
 
         // Dispatch to handler
-        match action {
+        let result = match action.as_str() {
             "launch" => self.handle_launch(params).await,
             "list_windows" => self.handle_list_windows(params).await,
             "find_element" => self.handle_find_element(params).await,
@@ -767,7 +904,30 @@ impl NativeTool for AppInteractTool {
                  click, type_text, read_text, get_tree, get_subtree, screenshot, close, press_keys, scroll, focus_window",
                 action
             ))),
+        };
+
+        match &result {
+            Ok(val) => {
+                // Truncate base64 image data in logs (screenshot action, or post-navigation enrichment)
+                let log_val = if val.get("_image_data").is_some() {
+                    let mut log_clone = val.clone();
+                    if let Some(obj) = log_clone.as_object_mut() {
+                        obj.remove("_image_data");
+                    }
+                    let s = serde_json::to_string(&log_clone).unwrap_or_default();
+                    format!("{} [+screenshot]", s)
+                } else {
+                    let s = serde_json::to_string(val).unwrap_or_default();
+                    if s.len() > 500 { format!("{}...(truncated)", &s[..500]) } else { s }
+                };
+                eprintln!("[app_interact] execute: action='{}' SUCCESS: {}", action, log_val);
+            }
+            Err(e) => {
+                eprintln!("[app_interact] execute: action='{}' ERROR: {}", action, e);
+            }
         }
+
+        result
     }
 }
 
@@ -966,6 +1126,42 @@ mod tests {
         let result = tool
             .check_sensitive_element_ref("win:abc|name:Submit|type:Button|aid:btn|idx:0", "click");
         assert!(result.is_ok());
+    }
+
+    // HWND extraction tests
+    #[test]
+    fn test_extract_hwnd_valid() {
+        let hwnd = AppInteractTool::extract_hwnd_from_element_ref(
+            "rid:0000002a.00cc0d46|hwnd:65536|name:OK|type:Button|aid:btnOk|idx:0",
+        );
+        assert_eq!(hwnd, 65536);
+    }
+
+    #[test]
+    fn test_extract_hwnd_missing() {
+        let hwnd =
+            AppInteractTool::extract_hwnd_from_element_ref("name:OK|type:Button|aid:btnOk|idx:0");
+        assert_eq!(hwnd, 0);
+    }
+
+    #[test]
+    fn test_extract_hwnd_negative() {
+        let hwnd = AppInteractTool::extract_hwnd_from_element_ref(
+            "rid:test|hwnd:13372742|name:Address bar|type:Edit|aid:view_1022|idx:0",
+        );
+        assert_eq!(hwnd, 13372742);
+    }
+
+    #[test]
+    fn test_extract_hwnd_zero() {
+        let hwnd = AppInteractTool::extract_hwnd_from_element_ref("hwnd:0|name:x");
+        assert_eq!(hwnd, 0);
+    }
+
+    #[test]
+    fn test_extract_hwnd_invalid_value() {
+        let hwnd = AppInteractTool::extract_hwnd_from_element_ref("hwnd:abc|name:x");
+        assert_eq!(hwnd, 0);
     }
 
     #[test]
